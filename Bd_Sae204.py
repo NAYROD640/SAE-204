@@ -247,22 +247,28 @@ def prog():
 
     rep = int(input("Quel capteur voulez voir ?\nSi tout appuyer sur 0 : "))
     tab = extractionValeur(conn, rep)
-
-    part4(tab)
-
     rep = "Mesure du capteur " + str(rep)
 
-    showGraph(tab, rep)
-    showHistogram(tab, rep)
-    showHistogram2(tab)
+    fini = False
+    while not fini:
+        rep2 = int(input("1 - Afficher le Graphe\n2 - Afficher l'Histogramme \n3 - Voir la répartition théorique \n4 "
+                         "- Calculer la p valeur \n5 - Quitter\nQuelle est votre choix : "))
+        if rep2==1 :
+            showGraph(tab, rep)
+        elif rep2==2 :
+            showHistogram2(tab, rep)
+        elif rep2==3 :
+            part4(tab)
+        elif rep2==4 :
+            calculate_p_value1()
+        else :
+            fini = True
 
-    calculate_p_value1()
+
+
+
+
 
 
 if __name__ == "__main__":
-    # print(prob(12, 15, 0.5))
-
     prog()
-
-    # print("La moyenne μ est : ",mean(tab))
-    # print("L'écrat type σ est : ",standardDeviation(tab))
