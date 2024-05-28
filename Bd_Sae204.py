@@ -242,6 +242,55 @@ def calculate_p_value1():
     else:
         print("Règle non déclenchée.")
 
+#tentative de règle
+
+def test_pValueRule():
+
+    # Nombre total de points
+    n = 12
+    # Nombre minimum de points en dehors de l'intervalle
+    k = 6
+    # Probabilité qu'un point soit en dehors de l'intervalle [-1.5σ, +1.5σ]
+    p = 0.1336
+
+    # Calcul de la probabilité cumulative jusqu'à k-1 succès
+    p_value_cumulative = binom.cdf(k - 1, n, p)
+    # Calcul de la p-valeur complémentaire
+    p_value_theorique = 1 - p_value_cumulative
+    # Affichage de la p-valeur théorique
+    print("La p-valeur théorique pour la règle est :", round(p_value_theorique, 5))
+
+    # Création d'un générateur de nombres aléatoires
+    rng = np.random.default_rng()
+    # Paramètres de la distribution normale
+    mu = 0  # Moyenne
+    sigma = 1  # Écart-type
+
+    # Nombre de simulations
+    num_simulations = 100000
+    # Compteur pour les règles déclenchées
+    count = 0
+
+    # Effectuer les simulations
+    for _ in range(num_simulations):
+        # Générer 12 points suivant une distribution normale
+        data = rng.normal(mu, sigma, n)
+
+        # Compter les points en dehors de l'intervalle [-1.5σ, +1.5σ]
+        outside_points = 0
+        for point in data:
+            if point < -1.5 * sigma or point > 1.5 * sigma:
+                outside_points += 1
+
+        # Vérifier si la règle est déclenchée
+        if outside_points >= k:
+            count += 1
+
+    # Calculer la p-valeur expérimentale
+    p_value_experimentale = count / num_simulations
+    # Affichage de la p-valeur expérimentale
+    print("La p-valeur expérimentale pour la règle est :", round(p_value_experimentale, 5))
+
 def prog():
     conn = connect()
 
@@ -252,7 +301,7 @@ def prog():
     fini = False
     while not fini:
         rep2 = int(input("1 - Afficher le Graphe\n2 - Afficher l'Histogramme \n3 - Voir la répartition théorique \n4 "
-                         "- Calculer la p valeur \n5 - Quitter\nQuelle est votre choix : "))
+                         "- Calculer la p valeur \n5 - test rule \n 6-Quitter\nQuelle est votre choix : "))
         if rep2==1 :
             showGraph(tab, rep)
         elif rep2==2 :
@@ -261,6 +310,8 @@ def prog():
             part4(tab)
         elif rep2==4 :
             calculate_p_value1()
+        elif rep2==5 :
+            test_pValueRule()
         else :
             fini = True
 
@@ -272,3 +323,4 @@ def prog():
 
 if __name__ == "__main__":
     prog()
+    test_pValueRule()
