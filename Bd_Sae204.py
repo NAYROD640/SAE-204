@@ -2,6 +2,7 @@
 from random import randint
 import statistics as stat
 import matplotlib.pyplot as plt
+import numpy as np
 import psycopg
 from scipy.stats import binom
 
@@ -10,19 +11,23 @@ from scipy.stats import binom
 def showGraph(tab: list, title="Mesure du capteur 0"):
     x = []
     y = []
+
+    #
     for i in range(len(tab)):
-        x.append(i)
+        x.append(i+1)
         y.append(tab[i])
 
+    # Calcul de la moyenne, écart type et la droite de regression
+    dr = droite_regression(x, y)
+    y2 = [dr[1] + dr[0] * x[i] for i in range(len(x))]
     ecart = standardDeviation(tab)
     moy = mean(tab)
-    plt.plot(x, y, 'c')
-    plt.plot([0, len(tab)], [-2 * ecart + moy, -2 * ecart + moy], 'r')  # Ligne mini acceptable
-    plt.plot([0, len(tab)], [2 * ecart + moy, 2 * ecart + moy], 'r')  # Ligne maxi acceptable
 
-    # dr = droite_regression(tab, tab)
-
-    plt.plot([0, len(tab)], [moy, moy], 'k')  # Ligne 0
+    plt.plot(x, y, 'c') # Résu des capteurs
+    plt.plot([1, len(tab)], [-2 * ecart + moy, -2 * ecart + moy], 'r')  # Ligne mini acceptable
+    plt.plot([1, len(tab)], [2 * ecart + moy, 2 * ecart + moy], 'r')  # Ligne maxi acceptable
+    plt.plot([1, len(tab)], [moy, moy], 'k')  # Ligne de la moyenne
+    plt.plot(x, y2, 'y')  # Droite de regression
 
     plt.grid()
     plt.xlabel("Numéro")
@@ -49,6 +54,28 @@ def showHistogram(tab: list, title="Mesure du capteur 0"):
         plt.title(title)
     plt.show()
 
+def showHistogram2(tab, title="Mesure du capteur 0"):
+    gap = standardDeviation(tab)
+
+    mini = -4 * gap
+    maxi = 4 * gap
+    bins = np.arange(mini, maxi + gap, gap)
+    my_xsticks = ['-4σ', '-3σ', '-2σ', '-1σ', '0', '1σ', '2σ', '3σ', '4σ']
+    plt.xticks(np.arange(mini, maxi + gap, gap), my_xsticks)
+    counts, edges, patches = plt.hist(tab, bins=bins, align='mid', edgecolor='black')
+
+    for count, edge in zip(counts, edges):
+        height = count
+        plt.text(edge + gap / 2, height, str(round((int(count) / len(tab)) * 100, 1)) + '%', ha='center', va='bottom')
+
+    plt.ylabel("Nombres de prises")
+
+    if title == "Mesure du capteur 0":
+        plt.title("Mesures des capteurs")
+    else:
+        plt.title(title)
+
+    plt.show()
 
 # Fonction permettant de se connecter à la base de données
 def connect():
@@ -63,7 +90,7 @@ def question1(conn):
     sql = """SELECT (controlvalue-sensorvalue)as différence
     From controlmeasurement join sensormeasurement on sensortimestamp = timestamp
     GROUP BY controlvalue, sensorvalue
-    LIMIT 1000;"""
+    LIMIT 500;"""
     with conn.execute(sql) as cur:
         s = cur.fetchall()
         return s
@@ -92,7 +119,7 @@ def question4(conn, num):
 From controlmeasurement join sensormeasurement on sensortimestamp = timestamp
 WHERE sensormeasurement.sensorid = %s
 GROUP BY controlvalue, sensorvalue
-LIMIT 100;"""
+LIMIT 500;"""
     with conn.execute(sql, [num]) as cur:
         s1 = cur.fetchall()
         return s1
@@ -185,15 +212,16 @@ def prog():
     part4(tab)
 
     rep = "Mesure du capteur " + str(rep)
+
     showGraph(tab, rep)
     showHistogram(tab, rep)
+    showHistogram2(tab)
 
 
 if __name__ == "__main__":
-    print(prob(12, 15, 0.5))
+    # print(prob(12, 15, 0.5))
+
     prog()
 
     # print("La moyenne μ est : ",mean(tab))
     # print("L'écrat type σ est : ",standardDeviation(tab))
-
-
