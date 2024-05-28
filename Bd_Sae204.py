@@ -1,0 +1,199 @@
+# Imporations des modules
+from random import randint
+import statistics as stat
+import matplotlib.pyplot as plt
+import psycopg
+from scipy.stats import binom
+
+
+# Fonction pour afficher une courbe des valeur de tab
+def showGraph(tab: list, title="Mesure du capteur 0"):
+    x = []
+    y = []
+    for i in range(len(tab)):
+        x.append(i)
+        y.append(tab[i])
+
+    ecart = standardDeviation(tab)
+    moy = mean(tab)
+    plt.plot(x, y, 'c')
+    plt.plot([0, len(tab)], [-2 * ecart + moy, -2 * ecart + moy], 'r')  # Ligne mini acceptable
+    plt.plot([0, len(tab)], [2 * ecart + moy, 2 * ecart + moy], 'r')  # Ligne maxi acceptable
+
+    # dr = droite_regression(tab, tab)
+
+    plt.plot([0, len(tab)], [moy, moy], 'k')  # Ligne 0
+
+    plt.grid()
+    plt.xlabel("Numéro")
+    plt.ylabel("Variation")
+    if title == "Mesure du capteur 0":
+        plt.title("Mesures des capteurs")
+    else:
+        plt.title(title)
+    plt.show()
+
+
+def showHistogram(tab: list, title="Mesure du capteur 0"):
+    x = []
+    for i in range(len(tab)):
+        x.append(round(tab[i], 2))
+
+    plt.hist(x, rwidth=0.95)
+
+    plt.xlabel("Décalages")
+    plt.ylabel("Nombres")
+    if title == "Mesure du capteur 0":
+        plt.title("Mesures des capteurs")
+    else:
+        plt.title(title)
+    plt.show()
+
+
+# Fonction permettant de se connecter à la base de données
+def connect():
+    return psycopg.connect(
+        host="iutinfo-sgbd.uphf.fr",
+        dbname="capteurs",
+        user="iutinfo313",
+        password="uJV5YZBr");
+
+
+def question1(conn):
+    sql = """SELECT (controlvalue-sensorvalue)as différence
+    From controlmeasurement join sensormeasurement on sensortimestamp = timestamp
+    GROUP BY controlvalue, sensorvalue
+    LIMIT 1000;"""
+    with conn.execute(sql) as cur:
+        s = cur.fetchall()
+        return s
+
+
+def question2(conn):
+    sql = """
+    with valeur_date as(
+   SELECT (controlvalue-sensorvalue)as différence, cast(sensortimestamp AS DATE) as d
+    From controlmeasurement join sensormeasurement on sensortimestamp = timestamp
+    where sensortimestamp >= '2024-03-23' AND sensortimestamp <= '2024-03-31'
+    GROUP BY controlvalue, sensorvalue, d
+    ORDER BY d ASC
+    )
+    SELECT avg(valeur_date.différence)
+    FROM valeur_date
+    group by d;
+    """
+    with conn.execute(sql) as cur:
+        s = cur.fetchall()
+        return s
+
+
+def question4(conn, num):
+    sql = """SELECT (controlvalue-sensorvalue)as différence
+From controlmeasurement join sensormeasurement on sensortimestamp = timestamp
+WHERE sensormeasurement.sensorid = %s
+GROUP BY controlvalue, sensorvalue
+LIMIT 100;"""
+    with conn.execute(sql, [num]) as cur:
+        s1 = cur.fetchall()
+        return s1
+
+
+# Fonction pour avoir la moyenne d'une liste
+def mean(tab: list) -> float:
+    return stat.mean(tab)
+
+
+# Fonction pour avoir l'ecart type d'une liste
+def standardDeviation(tab: list) -> float:
+    return stat.stdev(tab)
+
+
+def extraire(tab: list) -> float:
+    newTab = []
+    for elt in tab:
+        newTab.append(elt[0])
+    return newTab
+
+
+def extractionValeur(conn, rep) -> list:
+    if rep == 0:
+        tab = extraire(question1(conn))
+    else:
+        tab = extraire(question4(conn, rep))
+    return tab
+
+
+# Fonction pour compter les points compris entre -σ et +σ
+def qStat(tab: list, p) -> int:
+    moy = mean(tab)
+    ecart = p * standardDeviation(tab)
+    cpt = 0
+    for x in tab:
+        if (moy - ecart) <= x <= (moy + ecart):
+            cpt += 1
+    return cpt
+
+
+# Fonction pour vérifier le pourcentage de points dans σ +/-
+def verify_percentage(tab: list, p, n):
+    total_points = len(tab)
+    pts_qStat = qStat(tab, n)
+    pourcentage_qStat = (pts_qStat / total_points) * 100
+    print(f"Nombre de points dans ", n, "σ +/- : ", pts_qStat, "/", str(total_points))
+    print(f"Pourcentage de points dans l'intervalle σ +/- : {pourcentage_qStat}%")
+    resu = pourcentage_qStat - p
+
+    print("La différence avec l'intervalle de", p, "% est de :", round(resu, 3), "% \n")
+
+
+# Test partie 4
+def part4(tab: list):
+    print("")
+    verify_percentage(tab, 68, 1)
+    verify_percentage(tab, 95, 2)
+    verify_percentage(tab, 99.7, 3)
+
+
+def droite_regression(x: list, y: list) -> list:
+    b1 = round(covariance(x, y) / variance(x), 2)
+    b0 = round(mean(y) - b1 * mean(x), 2)
+    return [b1, b0]
+
+
+def variance(x: list) -> float:
+    tab = []
+    moy = mean(x)
+    for elt in x:
+        tab.append((elt - moy) ** 2)
+    return round(mean(tab), 2)
+
+
+def covariance(x: list, y: list):
+    return round(mean([(x[i] - mean(x)) * (y[i] - mean(y)) for i in range(len(x))]), 2)
+
+
+def prob(x: int, n: int, p: float) -> float:
+    return 1 - binom.cdf(x - 1, n, p)
+
+
+def prog():
+    conn = connect()
+
+    rep = int(input("Quel capteur voulez voir ?\nSi tout appuyer sur 0 : "))
+    tab = extractionValeur(conn, rep)
+
+    part4(tab)
+
+    rep = "Mesure du capteur " + str(rep)
+    showGraph(tab, rep)
+    showHistogram(tab, rep)
+
+
+if __name__ == "__main__":
+    print(prob(12, 15, 0.5))
+    prog()
+
+    # print("La moyenne μ est : ",mean(tab))
+    # print("L'écrat type σ est : ",standardDeviation(tab))
+
+
