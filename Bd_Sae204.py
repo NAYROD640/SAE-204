@@ -4,6 +4,7 @@ import statistics as stat
 import matplotlib.pyplot as plt
 import numpy as np
 import psycopg
+import math
 from scipy.stats import binom
 
 
@@ -202,6 +203,44 @@ def covariance(x: list, y: list):
 def prob(x: int, n: int, p: float) -> float:
     return 1 - binom.cdf(x - 1, n, p)
 
+# Règle :
+
+def binomial_prob(n, k, p):
+    binomial_coefficient = math.factorial(n) / (math.factorial(k) * math.factorial(n - k))
+    return binomial_coefficient * (p ** k) * ((1 - p) ** (n - k))
+
+def calculate_p_value(n, k, p):
+    probability = 0
+    for i in range(k, n + 1):
+        probability += binomial_prob(n, i, p)
+    return probability
+
+# Paramètres pour la règle pour au moins 8 points sur les 10 derniers du même côté de la moyenne:
+
+def calculate_p_value1():
+
+    # Calcul des p-valeur :
+    p_value8 = calculate_p_value(10, 8, 0.5)
+    p_value5 = calculate_p_value(7, 5, 0.1)
+    p_value7 = calculate_p_value(10, 7, 0.32)
+
+
+    print(f"La p-valeur pour la règle 'au moins 8 points sur les 10 derniers du même côté de la moyenne' est de : {p_value8:.4f}")
+    print(f"La p-valeur pour la règle 'au moins 5 points sur les 7 derniers en dehors de l’intervalle [-2σ, +2σ]' est de : {p_value5:.6f}")
+    print(f"La p-valeur pour la règle 'au moins 7 points sur les 10 derniers en dehors de l’intervalle [-σ, +σ]' est de : {p_value7:.5f}")
+
+    # Condition pour afficher le message dans le Notebook
+    if p_value8 < 0.05 :
+        print("Règle déclenchée : Au moins 8 points sur les 10 derniers du même côté de la moyenne.")
+
+    elif p_value5 < 0.05:
+        print("Règle déclenchée : Au moins 5 points sur les 7 derniers en dehors de l’intervalle [-2σ, +2σ].")
+
+    elif p_value8 > 0.05:
+        print("Règle déclenchée : Au moins 7 points sur les 10 derniers en dehors de l’intervalle [-σ, +σ].")
+
+    else:
+        print("Règle non déclenchée.")
 
 def prog():
     conn = connect()
@@ -216,6 +255,8 @@ def prog():
     showGraph(tab, rep)
     showHistogram(tab, rep)
     showHistogram2(tab)
+
+    calculate_p_value1()
 
 
 if __name__ == "__main__":
