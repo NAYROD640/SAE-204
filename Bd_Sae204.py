@@ -172,11 +172,11 @@ def verify_percentage(tab: list, p, n):
     total_points = len(tab)
     pts_qStat = qStat(tab, n)
     percentage_qStat = (pts_qStat / total_points) * 100
-    print(f"Number of points within ", n, "σ +/- : ", pts_qStat, "/", str(total_points))
+    print(f"\nNumber of points within {n}σ +/- : {pts_qStat} / {total_points}")
     print(f"Percentage of points within the interval σ +/- : {percentage_qStat}%")
     result = percentage_qStat - p
 
-    print("The difference with the interval of", p, "% is: ", round(result, 3), "% \n")
+    print(f"The difference with the interval of {p}% is: {round(result, 3)}% \n")
 
 
 # Part 4 test
@@ -222,28 +222,26 @@ def calculate_p_value(n, k, p):
         probability += binomial_prob(n, i, p)
     return probability
 
-
 # Parameters for the rule for at least 8 out of the last 10 points on the same side of the mean:
-
 def calculate_p_value1():
     # Calculating p-values:
     p_value8 = calculate_p_value(10, 8, 0.5)
     p_value5 = calculate_p_value(7, 5, 0.1)
     p_value7 = calculate_p_value(10, 7, 0.32)
 
-    print(f"The p-value for the rule 'at least 8 out of the last 10 points on the same side of the mean' is: {p_value8:.4f}")
+    print(f"\nThe p-value for the rule 'at least 8 out of the last 10 points on the same side of the mean' is: {p_value8:.4f}")
     print(f"The p-value for the rule 'at least 5 out of the last 7 points outside the interval [-2σ, +2σ]' is: {p_value5:.6f}")
-    print(f"The p-value for the rule 'at least 7 out of the last 10 points outside the interval [-σ, +σ]' is: {p_value7:.5f}")
+    print(f"The p-value for the rule 'at least 7 out of the last 10 points outside the interval [-σ, +σ]' is: {p_value7:.5f}\n")
 
     # Condition to display the message in the Notebook
     if p_value8 < 0.05:
-        print("Rule triggered: At least 8 out of the last 10 points on the same side of the mean.")
+        print("Rule triggered: At least 8 out of the last 10 points on the same side of the mean.\n")
     elif p_value5 < 0.05:
-        print("Rule triggered: At least 5 out of the last 7 points outside the interval [-2σ, +2σ].")
+        print("Rule triggered: At least 5 out of the last 7 points outside the interval [-2σ, +2σ].\n")
     elif p_value8 > 0.05:
-        print("Rule triggered: At least 7 out of the last 10 points outside the interval [-σ, +σ].")
+        print("Rule triggered: At least 7 out of the last 10 points outside the interval [-σ, +σ].\n")
     else:
-        print("Rule not triggered.")
+        print("Rule not triggered.\n")
 
 
 # Attempt to rule
@@ -304,7 +302,7 @@ def prog():
 
     finished = False
     while not finished:
-        rep2 = int(input("1 - Display the Graph\n2 - Display the Histogram \n3 - View the theoretical distribution \n4 - Calculate the p-value \n5 - Test rule \n6 - Exit\nWhat is your choice: "))
+        rep2 = int(input("\n1 - Display the Graph\n2 - Display the Histogram \n3 - View the theoretical distribution \n4 - Calculate the p-value \n5 - Test rule \n6 - Exit\nWhat is your choice: "))
         if rep2 == 1:
             showGraph(tab, rep)
         elif rep2 == 2:
@@ -321,4 +319,3 @@ def prog():
 
 if __name__ == "__main__":
     prog()
-    test_pValueRule()
