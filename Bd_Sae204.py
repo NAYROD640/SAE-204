@@ -1,4 +1,4 @@
-# Imporations des modules
+# Importing modules
 from random import randint
 import statistics as stat
 import matplotlib.pyplot as plt
@@ -8,55 +8,55 @@ import math
 from scipy.stats import binom
 
 
-# Fonction pour afficher une courbe des valeur de tab
-def showGraph(tab: list, title="Mesure du capteur 0"):
+# Function to display a curve of tab values
+def showGraph(tab: list, title="Sensor Measurement 0"):
     x = []
     y = []
 
-    #
     for i in range(len(tab)):
-        x.append(i+1)
+        x.append(i + 1)
         y.append(tab[i])
 
-    # Calcul de la moyenne, écart type et la droite de regression
-    dr = droite_regression(x, y)
-    y2 = [dr[1] + dr[0] * x[i] for i in range(len(x))]
-    ecart = standardDeviation(tab)
-    moy = mean(tab)
+    # Calculating mean, standard deviation, and regression line
+    reg_line = regression_line(x, y)
+    y2 = [reg_line[1] + reg_line[0] * x[i] for i in range(len(x))]
+    deviation = standard_deviation(tab)
+    avg = mean(tab)
 
-    plt.plot(x, y, 'c') # Résu des capteurs
-    plt.plot([1, len(tab)], [-2 * ecart + moy, -2 * ecart + moy], 'r')  # Ligne mini acceptable
-    plt.plot([1, len(tab)], [2 * ecart + moy, 2 * ecart + moy], 'r')  # Ligne maxi acceptable
-    plt.plot([1, len(tab)], [moy, moy], 'k')  # Ligne de la moyenne
-    plt.plot(x, y2, 'y')  # Droite de regression
+    plt.plot(x, y, 'c')  # Sensor results
+    plt.plot([1, len(tab)], [-2 * deviation + avg, -2 * deviation + avg], 'r')  # Minimum acceptable line
+    plt.plot([1, len(tab)], [2 * deviation + avg, 2 * deviation + avg], 'r')  # Maximum acceptable line
+    plt.plot([1, len(tab)], [avg, avg], 'k')  # Mean line
+    plt.plot(x, y2, 'y')  # Regression line
 
     plt.grid()
-    plt.xlabel("Numéro")
+    plt.xlabel("Number")
     plt.ylabel("Variation")
-    if title == "Mesure du capteur 0":
-        plt.title("Mesures des capteurs")
+    if title == "Sensor Measurement 0":
+        plt.title("Sensor Measurements")
     else:
         plt.title(title)
     plt.show()
 
 
-def showHistogram(tab: list, title="Mesure du capteur 0"):
+def showHistogram(tab: list, title="Sensor Measurement 0"):
     x = []
     for i in range(len(tab)):
         x.append(round(tab[i], 2))
 
     plt.hist(x, rwidth=0.95)
 
-    plt.xlabel("Décalages")
-    plt.ylabel("Nombres")
-    if title == "Mesure du capteur 0":
-        plt.title("Mesures des capteurs")
+    plt.xlabel("Offsets")
+    plt.ylabel("Counts")
+    if title == "Sensor Measurement 0":
+        plt.title("Sensor Measurements")
     else:
         plt.title(title)
     plt.show()
 
-def showHistogram2(tab, title="Mesure du capteur 0"):
-    gap = standardDeviation(tab)
+
+def showHistogram2(tab, title="Sensor Measurement 0"):
+    gap = standard_deviation(tab)
 
     mini = -4 * gap
     maxi = 4 * gap
@@ -69,29 +69,32 @@ def showHistogram2(tab, title="Mesure du capteur 0"):
         height = count
         plt.text(edge + gap / 2, height, str(round((int(count) / len(tab)) * 100, 1)) + '%', ha='center', va='bottom')
 
-    plt.ylabel("Nombres de prises")
+    plt.ylabel("Number of Occurrences")
 
-    if title == "Mesure du capteur 0":
-        plt.title("Mesures des capteurs")
+    if title == "Sensor Measurement 0":
+        plt.title("Sensor Measurements")
     else:
         plt.title(title)
 
     plt.show()
 
-# Fonction permettant de se connecter à la base de données
+
+# Function to connect to the database
 def connect():
     return psycopg.connect(
         host="iutinfo-sgbd.uphf.fr",
         dbname="capteurs",
         user="iutinfo313",
-        password="uJV5YZBr");
+        password="uJV5YZBr"
+    )
 
 
 def question1(conn):
-    sql = """SELECT (controlvalue-sensorvalue)as différence
-    From controlmeasurement join sensormeasurement on sensortimestamp = timestamp
-    GROUP BY controlvalue, sensorvalue
-    LIMIT 500;"""
+    sql = """SELECT (controlvalue - sensorvalue) AS difference
+             FROM controlmeasurement 
+             JOIN sensormeasurement ON sensortimestamp = timestamp
+             GROUP BY controlvalue, sensorvalue
+             LIMIT 500;"""
     with conn.execute(sql) as cur:
         s = cur.fetchall()
         return s
@@ -99,16 +102,17 @@ def question1(conn):
 
 def question2(conn):
     sql = """
-    with valeur_date as(
-   SELECT (controlvalue-sensorvalue)as différence, cast(sensortimestamp AS DATE) as d
-    From controlmeasurement join sensormeasurement on sensortimestamp = timestamp
-    where sensortimestamp >= '2024-03-23' AND sensortimestamp <= '2024-03-31'
-    GROUP BY controlvalue, sensorvalue, d
-    ORDER BY d ASC
+    WITH value_date AS (
+        SELECT (controlvalue - sensorvalue) AS difference, CAST(sensortimestamp AS DATE) AS d
+        FROM controlmeasurement 
+        JOIN sensormeasurement ON sensortimestamp = timestamp
+        WHERE sensortimestamp >= '2024-03-23' AND sensortimestamp <= '2024-03-31'
+        GROUP BY controlvalue, sensorvalue, d
+        ORDER BY d ASC
     )
-    SELECT avg(valeur_date.différence)
-    FROM valeur_date
-    group by d;
+    SELECT AVG(value_date.difference)
+    FROM value_date
+    GROUP BY d;
     """
     with conn.execute(sql) as cur:
         s = cur.fetchall()
@@ -116,65 +120,66 @@ def question2(conn):
 
 
 def question4(conn, num):
-    sql = """SELECT (controlvalue-sensorvalue)as différence
-From controlmeasurement join sensormeasurement on sensortimestamp = timestamp
-WHERE sensormeasurement.sensorid = %s
-GROUP BY controlvalue, sensorvalue
-LIMIT 500;"""
+    sql = """SELECT (controlvalue - sensorvalue) AS difference
+             FROM controlmeasurement 
+             JOIN sensormeasurement ON sensortimestamp = timestamp
+             WHERE sensormeasurement.sensorid = %s
+             GROUP BY controlvalue, sensorvalue
+             LIMIT 500;"""
     with conn.execute(sql, [num]) as cur:
         s1 = cur.fetchall()
         return s1
 
 
-# Fonction pour avoir la moyenne d'une liste
+# Function to calculate the mean of a list
 def mean(tab: list) -> float:
     return stat.mean(tab)
 
 
-# Fonction pour avoir l'ecart type d'une liste
-def standardDeviation(tab: list) -> float:
+# Function to calculate the standard deviation of a list
+def standard_deviation(tab: list) -> float:
     return stat.stdev(tab)
 
 
-def extraire(tab: list) -> float:
-    newTab = []
+def extract(tab: list) -> list:
+    new_tab = []
     for elt in tab:
-        newTab.append(elt[0])
-    return newTab
+        new_tab.append(elt[0])
+    return new_tab
 
 
-def extractionValeur(conn, rep) -> list:
+def extract_values(conn, rep) -> list:
     if rep == 0:
-        tab = extraire(question1(conn))
+        tab = extract(question1(conn))
     else:
-        tab = extraire(question4(conn, rep))
+        tab = extract(question4(conn, rep))
     return tab
 
 
-# Fonction pour compter les points compris entre -σ et +σ
+# Function to count the points within -σ and +σ
 def qStat(tab: list, p) -> int:
-    moy = mean(tab)
-    ecart = p * standardDeviation(tab)
-    cpt = 0
+    avg = mean(tab)
+    deviation = p * standard_deviation(tab)
+    count = 0
     for x in tab:
-        if (moy - ecart) <= x <= (moy + ecart):
-            cpt += 1
-    return cpt
+        if (avg - deviation) <= x <= (avg + deviation):
+            count += 1
+    return count
 
 
-# Fonction pour vérifier le pourcentage de points dans σ +/-
+# Function to verify the percentage of points within σ +/-
 def verify_percentage(tab: list, p, n):
     total_points = len(tab)
     pts_qStat = qStat(tab, n)
-    pourcentage_qStat = (pts_qStat / total_points) * 100
-    print(f"Nombre de points dans ", n, "σ +/- : ", pts_qStat, "/", str(total_points))
-    print(f"Pourcentage de points dans l'intervalle σ +/- : {pourcentage_qStat}%")
-    resu = pourcentage_qStat - p
+    percentage_qStat = (pts_qStat / total_points) * 100
+    print(f"Number of points within ", n, "σ +/- : ", pts_qStat, "/", str(total_points))
+    print(f"Percentage of points within the interval σ +/- : {percentage_qStat}%")
+    result = percentage_qStat - p
 
-    print("La différence avec l'intervalle de", p, "% est de :", round(resu, 3), "% \n")
+    print("The difference with the interval of", p, "% is: ", round(result, 3), "% \n")
 
 
-# Test partie 4
+# Part 4 test
 def part4(tab: list):
     print("")
     verify_percentage(tab, 68, 1)
@@ -182,7 +187,7 @@ def part4(tab: list):
     verify_percentage(tab, 99.7, 3)
 
 
-def droite_regression(x: list, y: list) -> list:
+def regression_line(x: list, y: list) -> list:
     b1 = round(covariance(x, y) / variance(x), 2)
     b0 = round(mean(y) - b1 * mean(x), 2)
     return [b1, b0]
@@ -190,9 +195,9 @@ def droite_regression(x: list, y: list) -> list:
 
 def variance(x: list) -> float:
     tab = []
-    moy = mean(x)
+    avg = mean(x)
     for elt in x:
-        tab.append((elt - moy) ** 2)
+        tab.append((elt - avg) ** 2)
     return round(mean(tab), 2)
 
 
@@ -203,11 +208,13 @@ def covariance(x: list, y: list):
 def prob(x: int, n: int, p: float) -> float:
     return 1 - binom.cdf(x - 1, n, p)
 
-# Règle :
+
+# Rule:
 
 def binomial_prob(n, k, p):
     binomial_coefficient = math.factorial(n) / (math.factorial(k) * math.factorial(n - k))
     return binomial_coefficient * (p ** k) * ((1 - p) ** (n - k))
+
 
 def calculate_p_value(n, k, p):
     probability = 0
@@ -215,110 +222,101 @@ def calculate_p_value(n, k, p):
         probability += binomial_prob(n, i, p)
     return probability
 
-# Paramètres pour la règle pour au moins 8 points sur les 10 derniers du même côté de la moyenne:
+
+# Parameters for the rule for at least 8 out of the last 10 points on the same side of the mean:
 
 def calculate_p_value1():
-
-    # Calcul des p-valeur :
+    # Calculating p-values:
     p_value8 = calculate_p_value(10, 8, 0.5)
     p_value5 = calculate_p_value(7, 5, 0.1)
     p_value7 = calculate_p_value(10, 7, 0.32)
 
+    print(f"The p-value for the rule 'at least 8 out of the last 10 points on the same side of the mean' is: {p_value8:.4f}")
+    print(f"The p-value for the rule 'at least 5 out of the last 7 points outside the interval [-2σ, +2σ]' is: {p_value5:.6f}")
+    print(f"The p-value for the rule 'at least 7 out of the last 10 points outside the interval [-σ, +σ]' is: {p_value7:.5f}")
 
-    print(f"La p-valeur pour la règle 'au moins 8 points sur les 10 derniers du même côté de la moyenne' est de : {p_value8:.4f}")
-    print(f"La p-valeur pour la règle 'au moins 5 points sur les 7 derniers en dehors de l’intervalle [-2σ, +2σ]' est de : {p_value5:.6f}")
-    print(f"La p-valeur pour la règle 'au moins 7 points sur les 10 derniers en dehors de l’intervalle [-σ, +σ]' est de : {p_value7:.5f}")
-
-    # Condition pour afficher le message dans le Notebook
-    if p_value8 < 0.05 :
-        print("Règle déclenchée : Au moins 8 points sur les 10 derniers du même côté de la moyenne.")
-
+    # Condition to display the message in the Notebook
+    if p_value8 < 0.05:
+        print("Rule triggered: At least 8 out of the last 10 points on the same side of the mean.")
     elif p_value5 < 0.05:
-        print("Règle déclenchée : Au moins 5 points sur les 7 derniers en dehors de l’intervalle [-2σ, +2σ].")
-
+        print("Rule triggered: At least 5 out of the last 7 points outside the interval [-2σ, +2σ].")
     elif p_value8 > 0.05:
-        print("Règle déclenchée : Au moins 7 points sur les 10 derniers en dehors de l’intervalle [-σ, +σ].")
-
+        print("Rule triggered: At least 7 out of the last 10 points outside the interval [-σ, +σ].")
     else:
-        print("Règle non déclenchée.")
+        print("Rule not triggered.")
 
-#tentative de règle
+
+# Attempt to rule
 
 def test_pValueRule():
-
-    # Nombre total de points
+    # Total number of points
     n = 12
-    # Nombre minimum de points en dehors de l'intervalle
+    # Minimum number of points outside the interval
     k = 6
-    # Probabilité qu'un point soit en dehors de l'intervalle [-1.5σ, +1.5σ]
+    # Probability that a point is outside the interval [-1.5σ, +1.5σ]
     p = 0.1336
 
-    # Calcul de la probabilité cumulative jusqu'à k-1 succès
+    # Cumulative probability calculation up to k-1 successes
     p_value_cumulative = binom.cdf(k - 1, n, p)
-    # Calcul de la p-valeur complémentaire
-    p_value_theorique = 1 - p_value_cumulative
-    # Affichage de la p-valeur théorique
-    print("La p-valeur théorique pour la règle est :", round(p_value_theorique, 5))
+    # Complementary p-value calculation
+    p_value_theoretical = 1 - p_value_cumulative
+    # Displaying the theoretical p-value
+    print("The theoretical p-value for the rule is: ", round(p_value_theoretical, 5))
 
-    # Création d'un générateur de nombres aléatoires
+    # Creating a random number generator
     rng = np.random.default_rng()
-    # Paramètres de la distribution normale
-    mu = 0  # Moyenne
-    sigma = 1  # Écart-type
+    # Normal distribution parameters
+    mu = 0  # Mean
+    sigma = 1  # Standard deviation
 
-    # Nombre de simulations
+    # Number of simulations
     num_simulations = 100000
-    # Compteur pour les règles déclenchées
+    # Counter for triggered rules
     count = 0
 
-    # Effectuer les simulations
+    # Performing the simulations
     for _ in range(num_simulations):
-        # Générer 12 points suivant une distribution normale
+        # Generate 12 points following a normal distribution
         data = rng.normal(mu, sigma, n)
 
-        # Compter les points en dehors de l'intervalle [-1.5σ, +1.5σ]
+        # Count the points outside the interval [-1.5σ, +1.5σ]
         outside_points = 0
         for point in data:
             if point < -1.5 * sigma or point > 1.5 * sigma:
                 outside_points += 1
 
-        # Vérifier si la règle est déclenchée
+        # Check if the rule is triggered
         if outside_points >= k:
             count += 1
 
-    # Calculer la p-valeur expérimentale
-    p_value_experimentale = count / num_simulations
-    # Affichage de la p-valeur expérimentale
-    print("La p-valeur expérimentale pour la règle est :", round(p_value_experimentale, 5))
+    # Calculate the experimental p-value
+    p_value_experimental = count / num_simulations
+    # Displaying the experimental p-value
+    print("The experimental p-value for the rule is: ", round(p_value_experimental, 5))
+
 
 def prog():
     conn = connect()
 
-    rep = int(input("Quel capteur voulez voir ?\nSi tout appuyer sur 0 : "))
-    tab = extractionValeur(conn, rep)
-    rep = "Mesure du capteur " + str(rep)
+    rep = int(input("Which sensor would you like to see? \nIf all, press 0: "))
+    tab = extract_values(conn, rep)
+    rep = "Sensor Measurement " + str(rep)
 
-    fini = False
-    while not fini:
-        rep2 = int(input("1 - Afficher le Graphe\n2 - Afficher l'Histogramme \n3 - Voir la répartition théorique \n4 "
-                         "- Calculer la p valeur \n5 - test rule \n 6-Quitter\nQuelle est votre choix : "))
-        if rep2==1 :
+    finished = False
+    while not finished:
+        rep2 = int(input("1 - Display the Graph\n2 - Display the Histogram \n3 - View the theoretical distribution \n4 - Calculate the p-value \n5 - Test rule \n6 - Exit\nWhat is your choice: "))
+        if rep2 == 1:
             showGraph(tab, rep)
-        elif rep2==2 :
+        elif rep2 == 2:
             showHistogram2(tab, rep)
-        elif rep2==3 :
+        elif rep2 == 3:
             part4(tab)
-        elif rep2==4 :
+        elif rep2 == 4:
             calculate_p_value1()
-        elif rep2==5 :
+        elif rep2 == 5:
             test_pValueRule()
-        else :
-            fini = True
-
-
-
-
-
+        else:
+            finished = True
 
 
 if __name__ == "__main__":
